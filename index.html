@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JPF POKER｜その一局を、強さに変える。</title>
+<meta name="description" content="JPF POKERは、対戦・戦績分析・ランクを一つにしたiPhone向けポーカーアプリ。（架空のデモサイト）">
+<style>
+/* ===== 色・フォントの設定（ここを変えると全体の雰囲気が変わります） ===== */
+:root{
+  --red:#D71920;        /* ブランドカラー（赤） */
+  --red-dark:#B01218;
+  --ink:#16171A;        /* 黒 */
+  --sub:#5C6068;        /* 補助テキスト */
+  --line:#E3E5E8;
+  --bg:#FFFFFF;
+  --gray:#F4F5F7;       /* 薄いグレー */
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,system-ui,sans-serif;
+  --max:1120px;--r:16px;  /* パネルの角丸（全セクション共通） */
+  --r-s:10px;  /* 小さなUIパーツの角丸 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:68px}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.8;font-size:16px;-webkit-text-size-adjust:100%;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+section{padding:88px 0}
+.tag{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--red);letter-spacing:.08em;margin-bottom:16px}.tag::before{content:"";width:20px;height:2px;background:var(--red)}
+h2{font-size:clamp(28px,4.6vw,48px);line-height:1.3;font-weight:800;letter-spacing:-.01em}
+.lead{color:var(--sub);margin-top:20px;max-width:34em}
+.demo-note{font-size:12px;color:var(--sub);margin-top:14px}
+
+/* ===== ロゴ（CSSのみ） ===== */
+.logo{display:inline-flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;border-radius:8px;background:var(--red);color:#fff;display:grid;place-items:center;font-size:19px;line-height:1}
+.logo-text{display:flex;flex-direction:column;line-height:1.05;font-weight:900;letter-spacing:.06em;font-size:15px}
+.logo-text small{font-size:9px;font-weight:600;letter-spacing:.12em;color:var(--sub);margin-top:3px}
+
+/* ===== ヘッダー ===== */
+header{position:fixed;inset:0 0 auto 0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav{height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav ul{display:flex;gap:30px;list-style:none;font-size:14px;font-weight:600}
+.nav ul a:hover{color:var(--red)}
+.nav-cta{background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:10px 18px;border-radius:var(--r-s);transition:background .2s}
+.nav-cta:hover{background:var(--red)}
+.burger{display:none;width:44px;height:44px;border:0;background:none;cursor:pointer}
+.burger span{display:block;width:22px;height:2px;background:var(--ink);margin:5px auto;transition:.2s}
+
+/* ===== ボタン（App Store風・CSSのみ） ===== */
+.store{display:inline-flex;align-items:center;gap:12px;background:var(--red);color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:17px;min-height:56px;transition:background .2s,transform .2s}
+.store:hover{background:var(--red-dark);transform:translateY(-2px)}
+.store i{font-style:normal;font-size:24px}
+.store small{display:block;font-size:11px;font-weight:600;opacity:.85;line-height:1.2}
+.store b{display:block;line-height:1.3}
+
+/* ===== 01 HERO ===== */
+.hero{padding:120px 0 72px;background:linear-gradient(180deg,#fff 60%,var(--gray))}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+.hero h1{font-size:clamp(40px,7vw,84px);line-height:1.15;font-weight:900;letter-spacing:-.02em;margin:18px 0 24px}
+.hero h1 em{font-style:normal;display:block;color:var(--red)}
+.hero p.sub{font-size:18px;color:var(--sub);max-width:28em}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.chip{border:1px solid var(--line);background:#fff;padding:6px 12px;border-radius:8px;font-size:14px;font-weight:700}
+.chip::before{content:"✓ ";color:var(--red)}
+.hero .store{margin-top:34px}
+
+/* ===== iPhoneモックアップ ===== */
+.phone{width:290px;aspect-ratio:9/18.6;background:#fff;border:9px solid var(--ink);border-radius:44px;position:relative;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.16);margin:0 auto}
+.phone::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:84px;height:22px;background:var(--ink);border-radius:20px;z-index:3}
+.screen{padding:40px 16px 16px;height:100%;background:var(--gray);display:flex;flex-direction:column;gap:10px;font-size:12px}
+.hero-visual{position:relative}
+/* ヒーロー背景：対戦シーン。写真に替える場合は .scene の background-image に画像を指定し、内側の要素（テーブル・席・カード）を削除 */
+.hero-visual{position:relative;min-height:620px;display:flex;align-items:center;justify-content:flex-end}
+.scene{position:absolute;inset:3% 0 3% -4%;background:var(--gray);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.felt-table{position:absolute;left:-18%;top:16%;width:112%;height:68%;border-radius:50%;background:#fff;border:1px solid var(--line);box-shadow:inset 0 0 0 10px var(--gray),inset 0 0 0 11px var(--line)}
+.seatchip{position:absolute;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:var(--r-s);padding:8px 10px;font-size:12px;font-weight:700;line-height:1.35}
+.seatchip small{display:block;color:var(--sub);font-weight:500}
+.seatchip em{font-style:normal;font-size:10px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--sub)}
+.seatchip.me{border-color:var(--red)}.seatchip.me em{background:var(--red);border-color:var(--red);color:#fff}
+.av-s{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:10px;font-style:normal}
+.av-s.red{background:var(--red)}
+.s-a{left:4%;top:15%}.s-me{left:4%;bottom:13%}
+.vs{position:absolute;left:calc(4% + 14px);top:calc(15% + 50px);bottom:calc(13% + 50px);border-left:1px dashed #C9CCD2}
+.board{position:absolute;left:4%;top:47%;display:flex;gap:4px}
+.board .pc{width:32px;height:46px;font-size:13px}
+.stage{position:absolute;left:4%;top:42%;font-size:11px;font-weight:700;color:var(--sub)}
+.status{position:absolute;left:4%;top:5%;display:flex;gap:6px;font-size:11px;font-weight:700}
+.status span{background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 10px}
+.status span:first-child{color:var(--red)}
+.hero-visual .phone{position:relative;z-index:1;margin:0 12px 0 0;width:260px}
+.mini{background:#fff;border-radius:var(--r-s);padding:10px 12px}
+.mini .k{color:var(--sub);font-size:10px}
+.mini .v{font-size:24px;font-weight:900;line-height:1.2}
+.mini .v.r{color:var(--red)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.playing-cards{display:flex;gap:6px}
+.pc{width:36px;height:50px;background:#fff;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;font-weight:900;font-size:15px}
+.pc.red{color:var(--red)}
+
+/* ===== 02 ABOUT：上達の循環 ===== */
+.loop{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:center}
+#loopSvg{width:100%;max-width:380px;margin:0 auto;display:block}
+.node{cursor:pointer}
+.node circle{fill:#fff;stroke:var(--line);stroke-width:2;transition:fill .3s,stroke .3s}
+.node text{font-size:12px;font-weight:700;fill:var(--sub);transition:fill .3s}
+.node.on circle{fill:var(--red);stroke:var(--red)}.node.on text{fill:#fff}
+.loop-cap{margin-top:32px;padding:4px 0 4px 18px;border-left:2px solid var(--red);min-height:84px}
+.loop-cap b{display:block;font-size:20px;line-height:1.5}
+.loop-cap span{color:var(--sub);font-size:15px}
+/* ===== 03 ANALYSIS ===== */
+.analysis{background:var(--gray)}
+.dash{margin-top:56px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stat .k{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:2px}
+.stat .v{font-size:clamp(32px,4.4vw,52px);font-weight:900;line-height:1.15;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:.4em;font-weight:700;margin-left:2px}
+.stat .v.r{color:var(--red)}
+.stat .d{font-size:12px;color:var(--sub);margin-top:2px}
+.stat{padding-left:24px;border-left:1px solid var(--line)}
+.dash-head+.stat{padding-left:0;border-left:0}
+.up{color:var(--red);font-weight:700}
+.dash-head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.dash-head b{font-size:16px}.dash-head span.who{font-size:12px;color:var(--sub);margin-left:12px}
+.seg{display:flex;background:var(--gray);border-radius:var(--r-s);padding:3px;font-size:12px;font-weight:700}
+.seg span{padding:5px 14px;border-radius:7px;color:var(--sub)}
+.seg span.on{background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.panel.full{grid-column:1/-1}
+.recent{list-style:none}
+.recent li{display:grid;grid-template-columns:110px 1fr 56px 90px;padding:12px 0;border-top:1px solid var(--line);font-size:14px;font-weight:600;align-items:center}
+.recent li span:first-child{color:var(--sub);font-weight:500;font-size:13px}
+.recent li span:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:800}
+.recent .w{color:var(--red)}
+.panel{grid-column:span 2;border-top:1px solid var(--line);padding-top:24px}
+.panel h4{font-size:15px;margin-bottom:16px}
+.panel h4 small{color:var(--sub);font-weight:500;margin-left:8px;font-size:12px}
+.chart{width:100%;height:auto;display:block}
+.bar{margin-bottom:14px}
+.bar-top{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:5px}
+.bar-top span:last-child{font-variant-numeric:tabular-nums}
+.track{height:8px;background:var(--gray);border-radius:99px;overflow:hidden}
+.fill{height:100%;background:var(--ink);border-radius:99px;width:0;transition:width 1.1s ease}
+.fill.red{background:var(--red)}
+.in .fill{width:var(--w)}
+.insight{grid-column:1/-1;background:var(--gray);border-radius:12px;padding:16px 20px;font-size:14px;display:flex;gap:14px;align-items:flex-start}
+.insight b{color:var(--red);white-space:nowrap}
+
+/* ===== 04 RANK ===== */
+.rank-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:center}
+.rank-now{font-size:clamp(72px,14vw,170px);font-weight:900;line-height:.95;letter-spacing:-.04em}
+.rank-now span{color:var(--red)}
+.ladder{list-style:none;border-left:2px solid var(--line);padding-left:0}
+.ladder li{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;margin-left:-2px;border-left:2px solid transparent;font-weight:700;color:#9A9EA6}
+.ladder li small{font-weight:500;font-size:13px}
+.ladder li.done{color:var(--ink)}
+.ladder li.now{border-left-color:var(--red);background:var(--gray);color:var(--ink);border-radius:0 12px 12px 0}
+.ladder li.now small{color:var(--red);font-weight:800}
+.xp{margin-top:24px}
+.xp .bar-top{font-size:13px}
+
+/* ===== 05 ONLINE ===== */
+.online{background:var(--ink);color:#fff}
+.online .lead{color:#B8BCC4}
+.online .tag{color:#FF6B70}
+.table-ui{margin-top:56px;background:#fff;color:var(--ink);border-radius:var(--r);padding:28px;display:grid;grid-template-columns:1.2fr .8fr;gap:32px}
+.felt{background:var(--gray);border-radius:12px;padding:28px;position:relative;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.pot{font-size:13px;color:var(--sub);text-align:center}
+.pot b{display:block;font-size:34px;color:var(--ink);font-variant-numeric:tabular-nums}
+.seat{position:absolute;background:#fff;border:1px solid var(--line);border-radius:var(--r-s);padding:8px 12px;font-size:12px;font-weight:700;line-height:1.4}
+.seat small{display:block;color:var(--sub);font-weight:500}
+.seat.me{border-color:var(--red)}
+.s1{left:16px;top:16px}.s2{right:16px;top:16px}.s3{left:50%;transform:translateX(-50%);bottom:14px}
+.actions{display:flex;gap:8px;margin-top:6px}
+.actions span{padding:8px 16px;border-radius:10px;font-size:13px;font-weight:800;border:1px solid var(--line);background:#fff}
+.actions span.go{background:var(--red);border-color:var(--red);color:#fff}
+.lobby h4{font-size:15px;margin-bottom:12px}
+.lobby li{list-style:none;display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px;font-weight:700}
+.lobby li small{color:var(--sub);font-weight:500}
+.lobby li em{font-style:normal;color:var(--red);font-size:13px}
+
+/* ===== 06 FRIEND ===== */
+.friend-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.room{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px}
+.room-code{font-size:clamp(36px,6vw,56px);font-weight:900;letter-spacing:.14em;text-align:center;padding:20px;background:var(--gray);border-radius:12px;font-variant-numeric:tabular-nums}
+.room-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--sub);margin:14px 2px 20px}
+.members{display:flex;flex-direction:column;gap:10px}
+.member{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px}
+.av.red{background:var(--red)}.av.off{background:#fff;border:2px dashed var(--line);color:var(--sub)}
+.member small{margin-left:auto;font-weight:600;color:var(--sub);font-size:12px}
+.room .btn{display:block;text-align:center;margin-top:22px;background:var(--ink);color:#fff;border-radius:12px;padding:14px;font-weight:800}
+
+/* ===== 07 ORG ===== */
+.org{background:var(--gray)}
+.org-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.fict{display:inline-block;margin-top:24px;font-size:12px;color:var(--sub);border:1px solid #CDD0D6;border-radius:8px;padding:6px 12px;background:#fff}
+.org dl{display:grid;grid-template-columns:7em 1fr;border-bottom:1px solid #CDD0D6}
+.org dt,.org dd{padding:18px 0;border-top:1px solid #CDD0D6}
+.org dt{font-size:13px;color:var(--sub);font-weight:600;padding-top:22px}
+.org dd{font-size:16px;font-weight:700}
+.org dd.big{font-size:clamp(22px,3vw,30px);font-weight:900;line-height:1.35;padding-top:14px}
+
+/* ===== 08 SAFE ===== */
+.assure{display:grid;grid-template-columns:.8fr 1.2fr;gap:64px;align-items:start}
+.safe-note{margin-top:20px;font-size:14px;color:var(--sub);max-width:24em}
+.assure-list{list-style:none;border-top:2px solid var(--ink)}
+.assure-list li{display:grid;grid-template-columns:32px 1fr;column-gap:20px;align-items:center;padding:24px 0;border-bottom:1px solid var(--line)}
+.ck{width:32px;height:32px;border-radius:50%;border:2px solid var(--red);position:relative;grid-row:span 2}
+.ck::after{content:"";position:absolute;left:10px;top:5px;width:7px;height:13px;border:solid var(--red);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.assure-list strong{font-size:clamp(24px,3.4vw,36px);font-weight:900;line-height:1.3}
+.assure-list p{color:var(--sub);font-size:14px}
+
+/* ===== 09 FINAL ===== */
+.final{background:var(--gray);text-align:center;padding:88px 0}
+.final h2{font-size:clamp(30px,6vw,64px)}
+.final p{margin-top:18px;color:var(--sub)}
+.final .store{margin-top:36px}
+
+/* ===== 10 FOOTER ===== */
+footer{padding:56px 0 40px;font-size:14px}
+.foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:28px}
+.foot ul{list-style:none;display:flex;gap:26px;flex-wrap:wrap}
+.foot ul a:hover{color:var(--red)}
+.copy{margin-top:36px;padding-top:22px;border-top:1px solid var(--line);color:var(--sub);font-size:13px}
+.disclaimer{margin-top:8px;font-size:11px;color:var(--sub)}
+
+/* ===== スクロール時の軽いフェード（ヒーロー以外） ===== */
+.js .fade{opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s}
+.js .fade.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.js .fade{opacity:1;transform:none}.fill{width:var(--w)}}
+
+/* ===== スマホ・タブレット ===== */
+@media (max-width:860px){
+  section{padding:56px 0}
+  .wrap{padding:0 20px}
+  .burger{display:block}
+  .nav ul{position:absolute;top:64px;left:0;right:0;background:#fff;flex-direction:column;gap:0;border-bottom:1px solid var(--line);display:none}
+  .nav ul.open{display:flex}
+  .nav ul a{display:block;padding:18px 20px;font-size:16px;border-top:1px solid var(--line)}
+  .nav-cta{display:none}
+  .hero{padding:104px 0 64px}
+  .hero .wrap,.rank-grid,.friend-grid,.org-grid,.table-ui{grid-template-columns:1fr;gap:44px}
+  .store{width:100%;justify-content:center}
+  .phone{width:250px}
+  .fc1{left:0}.fc2{right:0}
+  .dash{grid-template-columns:1fr 1fr;padding:22px}
+  .panel{grid-column:1/-1}
+  .insight{flex-direction:column;gap:4px}
+  .org dl{grid-template-columns:6em 1fr}
+  .final{padding:64px 0}
+  .loop,.assure{grid-template-columns:1fr;gap:28px}
+  #loopSvg{max-width:300px}
+  .stat{padding-left:0;border-left:0;border-top:1px solid var(--line);padding-top:14px}
+  .dash-head+.stat{border-top:1px solid var(--line)}
+  .dash-head span.who{display:block;margin:0}
+  .recent li{grid-template-columns:84px 1fr 44px 70px;font-size:13px}
+  .hero-visual{min-height:600px;align-items:flex-end;justify-content:center}
+  .hero-visual .phone{margin:0 auto;width:230px}
+  .scene{inset:0}
+  .felt-table,.status,.stage,.vs{display:none}
+  .s-a{left:4%;top:14px}.s-me{left:auto;right:4%;top:14px;bottom:auto}
+  .board{left:50%;top:70px;transform:translateX(-50%)}
+  .felt{min-height:380px;padding-bottom:84px}.felt .actions{position:static!important}
+}
+</style>
+<script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+
+<!-- ===== ヘッダー ===== -->
+<header>
+  <div class="wrap nav">
+    <a href="#top" class="logo" aria-label="JPF POKER トップへ">
+      <span class="logo-mark" aria-hidden="true">♠</span>
+      <span class="logo-text">JPF<span>POKER</span><small>日本ポーカー組合</small></span>
+    </a>
+    <ul id="menu">
+      <li><a href="#about">特徴</a></li>
+      <li><a href="#analysis">戦績分析</a></li>
+      <li><a href="#rank">ランク</a></li>
+      <li><a href="#online">対戦</a></li>
+      <li><a href="#org">運営について</a></li>
+    </ul>
+    <a href="#" class="nav-cta">ダウンロード</a>
+    <button class="burger" id="burger" aria-label="メニューを開く" aria-expanded="false"><span></span><span></span></button>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===== 01 HERO ===== -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="logo">
+        <span class="logo-mark" aria-hidden="true">♠</span>
+        <span class="logo-text">JPF<span>POKER</span><small>日本ポーカー組合</small></span>
+      </div>
+      <!-- キャッチコピー：ここを書き換え -->
+      <h1>その一局を、<em>強さに変える。</em></h1>
+      <p class="sub">対戦するだけで終わらない。<br>戦績とプレイを分析し、自分のポーカーを知る。</p>
+      <div class="chips"><span class="chip">基本プレイ無料</span><span class="chip">iPhone対応</span></div>
+      <!-- App Storeリンク：公開時は # を実際のURLに差し替え -->
+      <a href="#" class="store"><i aria-hidden="true">&#63743;</i><span><small>iPhone向けアプリ</small><b>App Storeからダウンロード</b></span></a>
+    </div>
+
+    <!-- 画像差し替え用：.hero-visual の中身をまるごと <img src="hero.jpg"> に変えてもOK -->
+    <div class="hero-visual">
+      <div class="scene" aria-hidden="true">
+        <!-- 対戦シーン：人物は描かず、テーブル・ポジション・状況表示で表現 -->
+        <div class="felt-table"></div><div class="vs"></div>
+        <div class="status"><span>● 対戦中</span><span>POT 3,200</span></div>
+        <div class="seatchip s-a"><i class="av-s">A</i><span>Player_A<small>9,450</small></span><em>BB</em></div>
+        <div class="stage">FLOP</div>
+        <div class="board playing-cards"><div class="pc red">A♦</div><div class="pc">7♣</div><div class="pc red">K♥</div><div class="pc">K♠</div><div class="pc">2♠</div></div>
+        <div class="seatchip s-me me"><i class="av-s red">YOU</i><span>あなた<small>14,200</small></span><em>BTN</em></div>
+      </div>
+      <div class="phone" role="img" aria-label="JPF POKERのアプリ画面（デモ）">
+        <div class="screen">
+          <div style="font-weight:800;font-size:13px">今週のサマリー</div>
+          <div class="row2">
+            <div class="mini"><div class="k">勝率</div><div class="v r">54.2%</div></div>
+            <div class="mini"><div class="k">総ハンド数</div><div class="v">1,284</div></div>
+          </div>
+          <div class="mini"><div class="k">ランク推移（デモ）</div>
+            <svg viewBox="0 0 200 60" class="chart" aria-hidden="true"><polyline points="0,50 30,44 60,46 90,32 120,35 150,20 200,8" fill="none" stroke="#D71920" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          </div>
+          <div class="mini"><div class="k">直前のハンド</div>
+            <div class="playing-cards" style="margin-top:6px"><div class="pc red">A♥</div><div class="pc">K♠</div><div class="pc red">Q♦</div><div class="pc">J♣</div><div class="pc red">10♥</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 02 JPF POKERとは ===== -->
+<section id="about">
+  <div class="wrap loop fade">
+    <div>
+      <p class="tag">ABOUT</p>
+      <h2>遊ぶだけじゃない。<br>強くなるためのポーカーへ。</h2>
+      <p class="lead">一局ごとの結果が、次の一局に活きる。</p>
+      <p class="loop-cap" aria-live="polite"><b id="capT">プレイ</b><span id="capD">対戦するたび、全ハンドを記録。</span></p>
+    </div>
+    <svg id="loopSvg" viewBox="0 0 320 320" role="img" aria-label="プレイ、データ蓄積、分析、改善、ランクアップと続く循環の図"></svg>
+  </div>
+</section>
+
+<!-- ===== 03 PLAY ANALYSIS ===== -->
+<section id="analysis" class="analysis">
+  <div class="wrap fade">
+    <p class="tag">PLAY ANALYSIS</p>
+    <h2>自分のプレイを、<br>数字で読み解く。</h2>
+    <p class="lead">勝率、ハンド数、ポイント収支、プレイ傾向、ランク推移。ひとつの画面で、自分の現在地と変化が分かります。</p>
+
+    <!-- 以下の数字はすべてデモデータです。 -->
+    <div class="dash" id="dash">
+      <div class="dash-head"><div><b>戦績分析</b><span class="who">JPF_Player（デモ）</span></div><div class="seg" aria-hidden="true"><span>週</span><span class="on">月</span><span>全期間</span></div></div>
+      <div class="stat"><div class="k">勝率</div><div class="v r"><span data-count="54.2" data-dec="1">54.2</span><small>%</small></div><div class="d">先月比 <b class="up">+2.1pt</b></div></div>
+      <div class="stat"><div class="k">総ハンド数</div><div class="v"><span data-count="1284">1,284</span></div><div class="d">今月 312ハンド</div></div>
+      <div class="stat"><div class="k">ポイント収支</div><div class="v r">+<span data-count="12400">12,400</span></div><div class="d">ゲーム内ポイント</div></div>
+      <div class="stat"><div class="k">現在ランク</div><div class="v">GOLD <small>II</small></div><div class="d">次のランクまで 240pt</div></div>
+
+      <div class="panel">
+        <h4>ランク推移<small>直近8週・デモ</small></h4>
+        <svg viewBox="0 0 420 170" class="chart" role="img" aria-label="ランク推移グラフ">
+          <g stroke="#E3E5E8"><line x1="0" y1="30" x2="420" y2="30"/><line x1="0" y1="80" x2="420" y2="80"/><line x1="0" y1="130" x2="420" y2="130"/></g><g font-size="10" fill="#5C6068"><text x="2" y="24">1,000pt</text><text x="2" y="74">500pt</text><text x="2" y="124">0pt</text></g>
+          <polyline points="10,140 70,125 130,128 190,100 250,104 310,70 370,56 410,36" fill="none" stroke="#D71920" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="410" cy="36" r="6" fill="#D71920"/>
+          <g font-size="11" fill="#5C6068"><text x="4" y="162">8週前</text><text x="176" y="162">4週前</text><text x="378" y="162">今週</text></g><text x="398" y="24" text-anchor="end" font-size="11" font-weight="700" fill="#D71920">GOLD II・760pt</text>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <h4>プレイ傾向<small>デモ</small></h4>
+        <div class="bar"><div class="bar-top"><span>ハンド参加率</span><span>26%</span></div><div class="track"><div class="fill" style="--w:26%"></div></div></div>
+        <div class="bar"><div class="bar-top"><span>レイズ率</span><span>18%</span></div><div class="track"><div class="fill" style="--w:18%"></div></div></div>
+        <div class="bar"><div class="bar-top"><span>ショーダウン勝率</span><span>58%</span></div><div class="track"><div class="fill red" style="--w:58%"></div></div></div>
+        <div class="bar"><div class="bar-top"><span>フォールド率</span><span>41%</span></div><div class="track"><div class="fill" style="--w:41%"></div></div></div>
+      </div>
+
+      <div class="panel full">
+        <h4>直近の対戦<small>デモ</small></h4>
+        <ul class="recent">
+          <li><span>今日 21:40</span><span>スタンダード卓</span><span class="w">勝ち</span><span class="w">+1,800</span></li>
+          <li><span>今日 20:55</span><span>スタンダード卓</span><span>負け</span><span>−600</span></li>
+          <li><span>昨日 22:10</span><span>アドバンス卓</span><span class="w">勝ち</span><span class="w">+2,400</span></li>
+        </ul>
+      </div>
+      <div class="insight"><b>傾向メモ（例）</b><span>後半のラウンドでレイズが増えるほど、勝率が上がっています。</span></div>
+    </div>
+    <p class="demo-note">※ 表示している数値はすべてデモ用のサンプルデータです。実在のユーザーの記録ではありません。</p>
+  </div>
+</section>
+
+<!-- ===== 04 RANK SYSTEM ===== -->
+<section id="rank">
+  <div class="wrap rank-grid fade">
+    <div>
+      <p class="tag">RANK SYSTEM</p>
+      <div class="rank-now">GOLD<br><span>II</span></div>
+      <p class="lead">プレイするほど、自分の現在地が分かる。ランクの変化が、上達のものさしになります。</p>
+      <div class="xp">
+        <div class="bar-top"><span>次のランクまで</span><span>760 / 1,000pt</span></div>
+        <div class="track"><div class="fill red" style="--w:76%"></div></div>
+        <p class="demo-note">※ ランク・ポイントはデモ表示です。</p>
+      </div>
+    </div>
+    <ul class="ladder" aria-label="ランクの一覧（デモ）">
+      <li class="done">BRONZE <small>達成済み</small></li>
+      <li class="done">SILVER <small>達成済み</small></li>
+      <li class="now">GOLD II <small>現在地</small></li>
+      <li>GOLD I <small>あと240pt</small></li>
+      <li>PLATINUM <small></small></li>
+      <li>DIAMOND <small></small></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== 05 ONLINE PLAY ===== -->
+<section id="online" class="online">
+  <div class="wrap fade">
+    <p class="tag">ONLINE PLAY</p>
+    <h2>全国のプレイヤーと、<br>いつでも対戦。</h2>
+    <p class="lead">テーブルに着けば、すぐ一局。自分の腕に合ったテーブルを選べます。</p>
+    <div class="table-ui">
+      <div class="felt" role="img" aria-label="対戦中のテーブル画面（デモ）">
+        <div class="seat s1">Player_A<small>12,800</small></div>
+        <div class="seat s2">Player_B<small>9,450</small></div>
+        <div class="pot">POT<b>3,200</b></div>
+        <div class="playing-cards"><div class="pc red">A♦</div><div class="pc">7♣</div><div class="pc red">K♥</div><div class="pc">K♠</div><div class="pc">2♠</div></div>
+        <div class="seat s3 me">あなた<small>14,200</small></div>
+        <div class="actions" style="position:absolute;right:16px;bottom:14px"><span>フォールド</span><span>コール</span><span class="go">レイズ</span></div>
+      </div>
+      <div class="lobby">
+        <h4>テーブル一覧（デモ）</h4>
+        <ul>
+          <li><span>ビギナー卓<br><small>ブラインド 50/100</small></span><em>空きあり</em></li>
+          <li><span>スタンダード卓<br><small>ブラインド 100/200</small></span><em>空きあり</em></li>
+          <li><span>アドバンス卓<br><small>ブラインド 500/1,000</small></span><em>空きあり</em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 06 FRIEND MATCH ===== -->
+<section id="friend">
+  <div class="wrap friend-grid fade">
+    <div>
+      <p class="tag">FRIEND MATCH</p>
+      <h2>気心の知れた仲間と、<br>貸し切りの一局を。</h2>
+      <p class="lead">ルームを作って、コードを送るだけ。招待した友達だけで遊べるプライベート対戦です。</p>
+    </div>
+    <div class="room" role="img" aria-label="フレンドルーム画面（デモ）">
+      <div class="room-code">482 906</div>
+      <div class="room-meta"><span>ルームコード（デモ）</span><span>最大6人</span></div>
+      <div class="members">
+        <div class="member"><span class="av red">YOU</span>あなた<small>ホスト</small></div>
+        <div class="member"><span class="av">F1</span>Friend_1<small>参加済み</small></div>
+        <div class="member"><span class="av">F2</span>Friend_2<small>参加済み</small></div>
+        <div class="member"><span class="av off">+</span><span style="color:#5C6068">招待を待っています</span></div>
+      </div>
+      <span class="btn">招待コードを送る</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 07 日本ポーカー組合について ===== -->
+<section id="org" class="org">
+  <div class="wrap org-grid fade">
+    <div>
+      <p class="tag">ABOUT US</p>
+      <h2>ポーカーを、競技として<br>楽しめる環境へ。</h2>
+      <p class="lead">日本ポーカー組合は、ポーカーを競技・ゲームとして楽しめる環境を作るために、JPF POKERを開発している団体です。</p>
+      <span class="fict">架空の団体です。実在の団体・公的機関・競技団体とは関係ありません。</span>
+    </div>
+    <!-- 団体情報：ここを書き換え -->
+    <dl>
+      <dt>団体名</dt><dd class="big">日本ポーカー組合（架空）</dd>
+      <dt>サービス</dt><dd>JPF POKER</dd>
+      <dt>対応端末</dt><dd>iPhone</dd>
+      <dt>料金</dt><dd>基本プレイ無料／アプリ内課金あり</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- ===== 08 安心して遊べる設計 ===== -->
+<section id="safe">
+  <div class="wrap assure fade">
+    <div>
+      <p class="tag">SAFETY</p>
+      <h2>安心して遊べる設計</h2>
+      <p class="safe-note">JPF POKERはゲームとして楽しむためのアプリです。無理のない範囲でお楽しみください。</p>
+    </div>
+    <ul class="assure-list">
+      <li><i class="ck" aria-hidden="true"></i><strong>基本プレイ無料</strong><p>アプリ内課金はありますが、基本のプレイは無料です。</p></li>
+      <li><i class="ck" aria-hidden="true"></i><strong>iPhone対応</strong><p>App Storeからダウンロードできます。</p></li>
+      <li><i class="ck" aria-hidden="true"></i><strong>ポイントは換金不可</strong><p>ゲーム内ポイントは、現金・金品等へ換えられません。</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===== 09 FINAL CTA ===== -->
+<section class="final">
+  <div class="wrap fade">
+    <h2>あなたのポーカーを、<br>数字で見てみよう。</h2>
+    <p>基本プレイ無料・iPhone対応</p>
+    <a href="#" class="store"><i aria-hidden="true">&#63743;</i><span><small>iPhone向けアプリ</small><b>App Storeからダウンロード</b></span></a>
+  </div>
+</section>
+</main>
+
+<!-- ===== 10 FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a href="#top" class="logo"><span class="logo-mark" aria-hidden="true">♠</span><span class="logo-text">JPF<span>POKER</span><small>日本ポーカー組合</small></span></a>
+      <ul>
+        <li><a href="#about">アプリについて</a></li>
+        <li><a href="#">利用規約</a></li>
+        <li><a href="#">プライバシーポリシー</a></li>
+        <li><a href="#">お問い合わせ</a></li>
+      </ul>
+    </div>
+    <p class="copy">© 日本ポーカー組合</p>
+    <p class="disclaimer">本サイトはWeb制作学習のために制作された架空のデモサイトです。</p>
+  </div>
+</footer>
+
+<script>
+/* ハンバーガーメニュー */
+const burger=document.getElementById('burger'),menu=document.getElementById('menu');
+burger.addEventListener('click',()=>{const o=menu.classList.toggle('open');burger.setAttribute('aria-expanded',o)});
+menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.classList.remove('open');burger.setAttribute('aria-expanded',false)}));
+
+/* スクロール時の軽いフェード＋数値カウント（分析セクションのみ） */
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function countUp(el){
+  const to=parseFloat(el.dataset.count),dec=+(el.dataset.dec||0),t0=performance.now(),d=900;
+  (function f(t){const p=Math.min((t-t0)/d,1),v=to*(1-Math.pow(1-p,3));
+    el.textContent=v.toLocaleString('ja-JP',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    if(p<1)requestAnimationFrame(f)})(t0);
+}
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;
+  e.target.classList.add('in');
+  e.target.querySelectorAll('[data-count]').forEach(el=>{if(!reduce)countUp(el)});
+  io.unobserve(e.target);
+}),{threshold:0,rootMargin:"0px 0px -6% 0px"});
+document.querySelectorAll('.fade').forEach(el=>io.observe(el));
+/* 念のため：一定時間後に未表示のセクションも必ず表示する */
+setTimeout(()=>document.querySelectorAll('.fade').forEach(el=>el.classList.add('in')),2500);
+
+/* 上達の循環図（プレイ→蓄積→分析→改善→ランクアップ） */
+(function(){
+  const names=['プレイ','蓄積','分析','改善','ランクUP'],C=160,R=118,nr=34,TAU=Math.PI*2/5;
+  const svg=document.getElementById('loopSvg'),capT=document.getElementById('capT'),capD=document.getElementById('capD');
+  const capN=['プレイ','データ蓄積','分析','改善','ランクアップ'],capM=['対戦するたび、全ハンドを記録。','勝率・収支・参加率が自動で積み上がる。','自分のプレイ傾向を数字で把握。','弱点が分かり、次の一局が変わる。','上達がランクに表れ、次のプレイへ。'];
+  const pt=a=>[(C+R*Math.cos(a)).toFixed(1),(C+R*Math.sin(a)).toFixed(1)];
+  let h='<defs><marker id="ar" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#D71920"/></marker></defs>';
+  for(let i=0;i<5;i++){const a=-Math.PI/2+i*TAU,p=pt(a+.38),q=pt(a+TAU-.38);
+    h+=`<path d="M${p[0]},${p[1]} A${R},${R} 0 0 1 ${q[0]},${q[1]}" fill="none" stroke="#D71920" stroke-width="2" marker-end="url(#ar)"/>`;}
+  h+='<text x="160" y="165" text-anchor="middle" font-size="14" font-weight="800" fill="#16171A">上達の循環</text>';
+  for(let i=0;i<5;i++){const c=pt(-Math.PI/2+i*TAU);
+    h+=`<g class="node" data-i="${i}"><circle cx="${c[0]}" cy="${c[1]}" r="${nr}"/><text x="${c[0]}" y="${c[1]}" dy=".35em" text-anchor="middle">${names[i]}</text></g>`;}
+  svg.innerHTML=h;
+  const nodes=[...svg.querySelectorAll('.node')];
+  let cur=0,timer;
+  function set(i){cur=i;nodes.forEach((n,k)=>n.classList.toggle('on',k===i));capT.textContent=capN[i];capD.textContent=capM[i];}
+  function pick(i){clearInterval(timer);set(i);}
+  nodes.forEach((n,i)=>n.addEventListener('click',()=>pick(i)));
+  set(0);
+  if(!reduce)timer=setInterval(()=>set((cur+1)%5),2600);
+})();
+</script>
+</body>
+</html>
